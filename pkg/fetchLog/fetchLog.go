@@ -15,7 +15,7 @@ import (
 	"github.com/litmuschaos/litmus-go/pkg/log"
 )
 
-func fetchLog(fullURLFile string) error {
+func FetchLog(fullURLFile string) error {
 	log.Info("Start to fetch log")
 	fileURL, err := url.Parse(fullURLFile)
 	if err != nil {
@@ -78,7 +78,7 @@ func fetchLog(fullURLFile string) error {
 func FetchLogApi(c *gin.Context) {
 	id := c.Param("id")
 	fullURLFile := "https://api.github.com/repos/litmuschaos/litmus-e2e/actions/runs/" + id + "/logs"
-	err := fetchLog(fullURLFile)
+	err := FetchLog(fullURLFile)
 	if err != nil {
 		c.JSON(400, gin.H{
 			"status": "error",
