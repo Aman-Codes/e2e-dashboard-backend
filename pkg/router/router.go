@@ -13,6 +13,6 @@ func Router() {
 			"status": customErrors.Success(),
 		})
 	})
-	router.GET("/runs/logs/:id", fetchLog.FetchLogApi)
+	router.POST("/logs", fetchLog.FetchLogApi)
 	router.Run(":8080")
 }

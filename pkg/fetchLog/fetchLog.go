@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
@@ -14,6 +15,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/litmuschaos/litmus-go/pkg/log"
 )
+
+type LogsInput struct {
+	PipelineId string `json:"pipelineId" binding:"required"`
+	JobName    string `json:"jobName" binding:"required"`
+	StepNumber string `json:"stepNumber" binding:"required"`
+}
 
 func fetchLog(fullURLFile string) error {
 	log.Info("Start to fetch log")
@@ -76,18 +83,40 @@ func fetchLog(fullURLFile string) error {
 }
 
 func FetchLogApi(c *gin.Context) {
-	id := c.Param("id")
-	fullURLFile := "https://api.github.com/repos/litmuschaos/litmus-e2e/actions/runs/" + id + "/logs"
+	var logsInput LogsInput
+	c.BindJSON(&logsInput)
+	logsInput.JobName = filepath.Clean(logsInput.JobName)
+	logsInput.StepNumber = filepath.Clean(logsInput.StepNumber)
+	log.Infof("received parameters for post request are, pipelineId: %s, jobName: %s, stepNumber: %s", logsInput.PipelineId, logsInput.JobName, logsInput.StepNumber)
+	fullURLFile := "https://api.github.com/repos/litmuschaos/litmus-e2e/actions/runs/" + logsInput.PipelineId + "/logs"
 	err := fetchLog(fullURLFile)
 	if err != nil {
-		c.JSON(400, gin.H{
-			"status": "error",
-			"error":  err.Error(),
-		})
+		customErrors.HandleError(c, err)
 		return
 	}
-	c.JSON(200, gin.H{
-		"status": customErrors.Success(),
-		"id":     id,
-	})
+	dir := "./output/" + logsInput.JobName
+	log.Infof("start reading dir %s", dir)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		log.Errorf("unable to read dir, err %v", err)
+		customErrors.HandleError(c, err)
+		return
+	}
+	for _, f := range files {
+		log.Infof("file name is %s", f.Name())
+		if strings.HasPrefix(f.Name(), logsInput.StepNumber+"_") {
+			log.Infof("the required file name is %s", f.Name())
+			fileName := "./output/" + logsInput.JobName + "/" + f.Name()
+			log.Infof("start reading file %s", fileName)
+			buf, err := os.ReadFile(fileName)
+			if err != nil {
+				log.Errorf("unable to read file, err %v", err)
+				customErrors.HandleError(c, err)
+				return
+			}
+			c.Data(200, "application/json; charset=utf-8", buf)
+			return
+		}
+	}
+	customErrors.HandleError(c, err)
 }
