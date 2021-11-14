@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/constants"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/fetchLog"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/sendRequest"
@@ -44,7 +45,7 @@ func Router() {
 			handleError(c, err)
 			return
 		}
-		dir := "./output/" + logsInput.JobName
+		dir := constants.OutputFolderPath + "/" + logsInput.JobName
 		log.Infof("start reading dir %s", dir)
 		files, err := os.ReadDir(dir)
 		if err != nil {
@@ -56,7 +57,7 @@ func Router() {
 			log.Infof("file name is %s", f.Name())
 			if strings.HasPrefix(f.Name(), logsInput.StepNumber+"_") {
 				log.Infof("the required file name is %s", f.Name())
-				fileName := "./output/" + logsInput.JobName + "/" + f.Name()
+				fileName := constants.OutputFolderPath + "/" + logsInput.JobName + "/" + f.Name()
 				log.Infof("start reading file %s", fileName)
 				buf, err := os.ReadFile(fileName)
 				if err != nil {
@@ -73,7 +74,7 @@ func Router() {
 	router.GET("/readfile/:name/:number", func(c *gin.Context) {
 		name := filepath.Clean(c.Param("name"))
 		number := filepath.Clean(c.Param("number"))
-		dir := "./output/" + name
+		dir := constants.OutputFolderPath + "/" + name
 		log.Infof("start reading dir %s", dir)
 		files, err := os.ReadDir(dir)
 		if err != nil {
@@ -85,7 +86,7 @@ func Router() {
 			log.Infof("file name is %s", f.Name())
 			if strings.HasPrefix(f.Name(), number+"_") {
 				log.Infof("the required file name is %s", f.Name())
-				fileName := "./output/" + name + "/" + f.Name()
+				fileName := constants.OutputFolderPath + "/" + name + "/" + f.Name()
 				log.Infof("start reading file %s", fileName)
 				buf, err := os.ReadFile(fileName)
 				if err != nil {

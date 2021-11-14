@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/constants"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
 	"github.com/litmuschaos/litmus-go/pkg/log"
 )
 
 func Unzip(fileName string) error {
-	dst := "output"
+	dst := constants.OutputFolderPath
 	archive, err := zip.OpenReader(fileName)
 	if err != nil {
 		log.Errorf("unable to read the file %s, err %v", fileName, err)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/constants"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/deleteFolder"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/env"
@@ -64,7 +65,7 @@ func FetchLog(fullURLFile string) error {
 		return customErrors.InternalServerError()
 	}
 	defer file.Close()
-	deleteFolder.DeleteFolder("./output")
+	deleteFolder.DeleteFolder(constants.OutputFolderPath)
 	err = unzip.Unzip(fileName)
 	if err != nil {
 		log.Errorf("failed to unzip file %s", fileName)
