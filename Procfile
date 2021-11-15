@@ -1,0 +1,1 @@
+web: bin/e2e-dashboard-backend

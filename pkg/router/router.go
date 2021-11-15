@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/constants"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/env"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/fetchLog"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/sendRequest"
 	"github.com/gin-contrib/cors"
@@ -40,5 +41,9 @@ func Router() {
 		orgName := c.Param("orgName")
 		sendRequest.SendGetRequestWrapper(c, constants.BaseGitHubUrl+"/repos/"+orgName+"/litmus-go/commits")
 	})
-	router.Run(":8080")
+	port := env.GoDotEnvVariable("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	router.Run(":" + port)
 }
