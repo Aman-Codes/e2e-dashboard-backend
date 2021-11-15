@@ -7,13 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/constants"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
 	"github.com/litmuschaos/litmus-go/pkg/log"
 )
 
-func Unzip(fileName string) error {
-	dst := "output"
-	archive, err := zip.OpenReader(fileName)
+func Unzip(fileName string, randomString string) error {
+	dst := constants.FolderPath + randomString
+	archive, err := zip.OpenReader(constants.FolderPath + randomString + fileName)
 	if err != nil {
 		log.Errorf("unable to read the file %s, err %v", fileName, err)
 		return customErrors.InternalServerError()

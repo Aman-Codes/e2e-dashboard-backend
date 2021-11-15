@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/constants"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/customErrors"
-	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/deleteFolder"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/env"
 	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/unzip"
+	"github.com/Aman-Codes/e2e-dashboard-backend/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/litmuschaos/litmus-go/pkg/log"
 )
@@ -22,25 +23,35 @@ type LogsInput struct {
 	StepNumber string `json:"stepNumber" binding:"required"`
 }
 
-func fetchLog(fullURLFile string) error {
+func parseUrl(fullURLFile string) (string, error) {
 	log.Info("Start to fetch log")
 	fileURL, err := url.Parse(fullURLFile)
 	if err != nil {
 		log.Errorf("failed to parse URL, err %v", err)
-		return customErrors.InternalServerError()
+		return "", customErrors.InternalServerError()
 	}
-	log.Infof("The parsed fileURL is %v", fileURL)
+	log.Infof("The parsed fileURL is %s", fileURL)
 	path := fileURL.Path
 	segments := strings.Split(path, "/")
 	fileName := segments[len(segments)-1] + ".zip"
+	log.Infof("fileName is %s", fileName)
+	return fileName, nil
+}
+
+func fetchLog(fullURLFile string, randomString string) error {
+	fileName, err := parseUrl(fullURLFile)
+	if err != nil {
+		return err
+	}
 
 	// Create blank file
-	file, err := os.Create(fileName)
+	file, err := os.Create(constants.FolderPath + randomString + fileName)
 	if err != nil {
-		log.Errorf("failed to create file %s, err %v", fileName, err)
+		log.Errorf("failed to create file %s, err %v", constants.FolderPath+randomString+fileName, err)
 		return customErrors.InternalServerError()
 	}
-	log.Infof("Successfully created file %s", fileName)
+	log.Infof("Successfully created file %s", constants.FolderPath+randomString+fileName)
+
 	client := http.Client{
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {
 			r.URL.Opaque = r.URL.Path
@@ -71,8 +82,7 @@ func fetchLog(fullURLFile string) error {
 		return customErrors.InternalServerError()
 	}
 	defer file.Close()
-	deleteFolder.DeleteFolder("./output")
-	err = unzip.Unzip(fileName)
+	err = unzip.Unzip(fileName, randomString)
 	if err != nil {
 		log.Errorf("failed to unzip file %s", fileName)
 		return customErrors.InternalServerError()
@@ -88,13 +98,14 @@ func FetchLogApi(c *gin.Context) {
 	logsInput.JobName = filepath.Clean(logsInput.JobName)
 	logsInput.StepNumber = filepath.Clean(logsInput.StepNumber)
 	log.Infof("received parameters for post request are, pipelineId: %s, jobName: %s, stepNumber: %s", logsInput.PipelineId, logsInput.JobName, logsInput.StepNumber)
-	fullURLFile := "https://api.github.com/repos/litmuschaos/litmus-e2e/actions/runs/" + logsInput.PipelineId + "/logs"
-	err := fetchLog(fullURLFile)
+	fullURLFile := constants.BaseGitHubUrl + "/repos/litmuschaos/litmus-e2e/actions/runs/" + logsInput.PipelineId + "/logs"
+	randomString := utils.RandString(8)
+	err := fetchLog(fullURLFile, randomString)
 	if err != nil {
 		customErrors.HandleError(c, err)
 		return
 	}
-	dir := "./output/" + logsInput.JobName
+	dir := constants.FolderPath + randomString + "/" + logsInput.JobName
 	log.Infof("start reading dir %s", dir)
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -106,7 +117,7 @@ func FetchLogApi(c *gin.Context) {
 		log.Infof("file name is %s", f.Name())
 		if strings.HasPrefix(f.Name(), logsInput.StepNumber+"_") {
 			log.Infof("the required file name is %s", f.Name())
-			fileName := "./output/" + logsInput.JobName + "/" + f.Name()
+			fileName := dir + "/" + f.Name()
 			log.Infof("start reading file %s", fileName)
 			buf, err := os.ReadFile(fileName)
 			if err != nil {
